@@ -22,7 +22,7 @@ public class BlasterCommand implements Command {
 			}
 			log.info("Blasting {} for {} times.", word, count);
 			for (int i = 0; i < count; i++) {
-				channel.createMessage(word).block();
+				channel.createMessage(word).subscribe();
 			}
 		}
 	}
