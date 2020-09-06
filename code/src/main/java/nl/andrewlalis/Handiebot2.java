@@ -2,27 +2,54 @@ package nl.andrewlalis;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.MessageChannel;
+import lombok.extern.slf4j.Slf4j;
+import nl.andrewlalis.consumers.MessageCreateConsumer;
 
 /**
  * The starting point for the application.
  */
+@Slf4j
 public class Handiebot2 {
 
     public static void main(String[] args) {
-        final String token = "NTg1Mzk3MjgyODM3MzY0NzM3.XPY3tA.e6EEHGGLNWLtOtHqKstMc0pm2Hw";
-        final DiscordClient client = DiscordClient.create(token);
-        final GatewayDiscordClient gateway = client.login().block();
-        gateway.on(MessageCreateEvent.class).subscribe(event -> {
-            final Message message = event.getMessage();
-            if ("!ping".equals(message.getContent())) {
-                final MessageChannel channel = message.getChannel().block();
-                channel.createMessage("Pong!").block();
-            }
+        final DiscordClient client = DiscordClient.create(getTokenFromArgs(args));
+        GatewayDiscordClient gateway = client.login().blockOptional()
+                .orElseThrow(() -> new RuntimeException("Could not obtain gateway discord client."));
+
+        log.info("Waiting for ready event.");
+        gateway.on(ReadyEvent.class).subscribe(event -> {
+            log.info("Logged in as {}({}).", event.getSelf().getUsername(), event.getSelf().getDiscriminator());
+            event.getSelf().getClient().getGuilds().collectList().subscribe(guilds -> {
+                guilds.forEach(guild -> {
+                    log.info("Active in guild {}({}).", guild.getName(), guild.getId().asString());
+                });
+            });
         });
 
+        log.info("Initializing message consumer.");
+        gateway.on(MessageCreateEvent.class).subscribe(new MessageCreateConsumer());
+
         gateway.onDisconnect().block();
+    }
+
+    /**
+     * Parses a Discord client token from the command line arguments. Will force
+     * exit the program if a token cannot be obtained.
+     * @param args The command line args.
+     * @return The token to use.
+     */
+    private static String getTokenFromArgs(String[] args) {
+        if (args.length < 1) {
+            log.error("Missing token command line argument.");
+            System.exit(-1);
+        }
+        final String token = args[0];
+        if (token.isBlank()) {
+            log.error("Invalid token argument given.");
+            System.exit(-1);
+        }
+        return token;
     }
 }
