@@ -3,10 +3,12 @@ package nl.andrewlalis.command;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import lombok.extern.slf4j.Slf4j;
+import nl.andrewlalis.command.commands.FormulaCommand;
 import nl.andrewlalis.command.commands.LatexMathRenderCommand;
 import nl.andrewlalis.command.commands.PingCommand;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,11 @@ public class CommandManager {
 	private void initializeCommands() {
 		this.commands.put("ping", new PingCommand());
 		this.commands.put("math", new LatexMathRenderCommand());
+		try {
+			this.commands.put("formula", new FormulaCommand());
+		} catch (IOException e) {
+			log.error("Could not load formulas for the formula command: {}", e.getMessage());
+		}
 	}
 
 	public Mono<Void> handleMessage(MessageCreateEvent event) {
@@ -62,5 +69,13 @@ public class CommandManager {
 			instance = new CommandManager();
 		}
 		return instance;
+	}
+
+	public Mono<Void> executeCommand(MessageCreateEvent event, String commandWord, String... args) {
+		Command command = this.commands.get(commandWord);
+		if (command != null) {
+			return command.call(event, args);
+		}
+		return Mono.empty();
 	}
 }
