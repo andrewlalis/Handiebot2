@@ -1,6 +1,7 @@
 package nl.andrewlalis.command;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import reactor.core.publisher.Mono;
 
 public interface Command {
 	/**
@@ -8,5 +9,5 @@ public interface Command {
 	 * @param event The event which triggered this call.
 	 * @param args The arguments to pass to this call.
 	 */
-	void call(MessageCreateEvent event, String[] args);
+	Mono<Void> call(MessageCreateEvent event, String[] args);
 }

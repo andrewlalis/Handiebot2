@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 public class MessageCreateConsumer implements Consumer<MessageCreateEvent> {
 	@Override
 	public void accept(MessageCreateEvent event) {
-		CommandManager.getInstance().handleMessage(event);
+		CommandManager.getInstance().handleMessage(event)
+				.subscribe();
 	}
 }

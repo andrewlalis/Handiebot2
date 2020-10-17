@@ -1,10 +1,11 @@
 package nl.andrewlalis.command;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.Message;
 import lombok.extern.slf4j.Slf4j;
-import nl.andrewlalis.command.commands.BlasterCommand;
 import nl.andrewlalis.command.commands.LatexMathRenderCommand;
 import nl.andrewlalis.command.commands.PingCommand;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +29,10 @@ public class CommandManager {
 
 	private void initializeCommands() {
 		this.commands.put("ping", new PingCommand());
-		this.commands.put("blaster", new BlasterCommand());
 		this.commands.put("math", new LatexMathRenderCommand());
 	}
 
-	public void handleMessage(MessageCreateEvent event) {
+	public Mono<Void> handleMessage(MessageCreateEvent event) {
 		final String content = event.getMessage().getContent();
 		if (content.startsWith(PREFIX)) {
 			final String[] words = content.split(" ");
@@ -45,10 +45,16 @@ public class CommandManager {
 				if (event.getMessage().getAuthor().isPresent()) {
 					author = event.getMessage().getAuthor().get().getUsername();
 				}
-				log.info("Command {} called by `{}`.", commandWord, author);
-				command.call(event, args);
+				log.debug("Command {} called by `{}`.", commandWord, author);
+				return command.call(event, args)
+						.then(
+								Mono.just(event.getMessage())
+										.flatMap(Message::delete)
+										.doOnError(throwable -> log.error("Could not delete user command message: {}", throwable.getMessage()))
+						);
 			}
 		}
+		return Mono.empty();
 	}
 
 	public static CommandManager getInstance() {

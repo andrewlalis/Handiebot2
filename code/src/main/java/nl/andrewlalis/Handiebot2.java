@@ -20,11 +20,9 @@ public class Handiebot2 {
 
         log.info("Waiting for ready event.");
         gateway.on(ReadyEvent.class).subscribe(event -> {
-            log.info("Logged in as {}({}).", event.getSelf().getUsername(), event.getSelf().getDiscriminator());
+            log.info("Logged in as {}#{}.", event.getSelf().getUsername(), event.getSelf().getDiscriminator());
             event.getSelf().getClient().getGuilds().collectList().subscribe(guilds -> {
-                guilds.forEach(guild -> {
-                    log.info("Active in guild {}({}).", guild.getName(), guild.getId().asString());
-                });
+                guilds.forEach(guild -> log.info("Active in guild {}({}).", guild.getName(), guild.getId().asString()));
             });
         });
 

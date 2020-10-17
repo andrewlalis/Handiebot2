@@ -24,30 +24,32 @@ import java.time.Duration;
 @Slf4j
 public class LatexMathRenderCommand implements Command {
 	@Override
-	public void call(MessageCreateEvent event, String[] args) {
+	public Mono<Void> call(MessageCreateEvent event, String[] args) {
 		if (args.length < 1) {
-			Mono.when(
-					Mono.just(event.getMessage())
-						.delayElement(Duration.ofSeconds(3))
-						.flatMap(Message::delete),
-					Mono.just(event.getMessage())
+			return Mono.just(event.getMessage())
 						.flatMap(Message::getChannel)
 						.flatMap(channel -> channel.createMessage("Invalid command. Expected at least one argument."))
-						.delayElement(Duration.ofSeconds(3))
-						.flatMap(Message::delete)
-			).subscribe();
+						.flatMap(message -> this.deleteMessageAfter(message, Duration.ofSeconds(3)));
 		}
 		final String mathString = "$$ " + String.join(" ", args) + " $$";
-		Mono.just(event.getMessage())
+		return Mono.just(event.getMessage())
 				.flatMap(Message::getChannel)
 				.flatMap(channel -> channel.createMessage(messageCreateSpec -> {
 					try {
 						messageCreateSpec.addFile("math.png", this.renderLatex(mathString));
 					} catch (IOException e) {
-						e.printStackTrace();
+						log.warn("Error creating LaTeX math image: {}", e.getMessage());
 						messageCreateSpec.setContent("Error creating image.");
 					}
-				})).subscribe();
+				}))
+				.then();
+	}
+
+	private Mono<Void> deleteMessageAfter(Message message, Duration duration) {
+		return Mono.just(message)
+				.delayElement(duration)
+				.flatMap(Message::delete)
+				.doOnError(throwable -> log.warn("Error deleting message: {}", throwable.getMessage()));
 	}
 
 	private InputStream renderLatex(String latex) throws IOException {

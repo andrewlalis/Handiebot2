@@ -7,10 +7,10 @@ import reactor.core.publisher.Mono;
 
 public class PingCommand implements Command {
 	@Override
-	public void call(MessageCreateEvent event, String[] args) {
-		Mono.just(event.getMessage())
+	public Mono<Void> call(MessageCreateEvent event, String[] args) {
+		return Mono.just(event.getMessage())
 				.flatMap(Message::getChannel)
 				.flatMap(channel -> channel.createMessage("Pong!"))
-				.subscribe();
+				.then();
 	}
 }
