@@ -3,11 +3,17 @@ package nl.andrewlalis.command;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import lombok.extern.slf4j.Slf4j;
 import nl.andrewlalis.command.commands.BlasterCommand;
+import nl.andrewlalis.command.commands.LatexMathRenderCommand;
 import nl.andrewlalis.command.commands.PingCommand;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Singleton manager class for keeping a list of all available commands, and
+ * doing the necessary preparations to delegate processing of a message to a
+ * command's logic.
+ */
 @Slf4j
 public class CommandManager {
 	private static CommandManager instance;
@@ -23,6 +29,7 @@ public class CommandManager {
 	private void initializeCommands() {
 		this.commands.put("ping", new PingCommand());
 		this.commands.put("blaster", new BlasterCommand());
+		this.commands.put("math", new LatexMathRenderCommand());
 	}
 
 	public void handleMessage(MessageCreateEvent event) {
@@ -38,7 +45,7 @@ public class CommandManager {
 				if (event.getMessage().getAuthor().isPresent()) {
 					author = event.getMessage().getAuthor().get().getUsername();
 				}
-				log.info("Command {} called by {}.", commandWord, author);
+				log.info("Command {} called by `{}`.", commandWord, author);
 				command.call(event, args);
 			}
 		}
